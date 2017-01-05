@@ -21,7 +21,12 @@ void map_new (unsigned width, unsigned height)
     map_set (width - 1, y, 1); // Wall
   }
 
-  map_object_begin (4);
+  map_set(2, height-2, 2);
+  //map_set(2, height-2, 3);
+  //map_set(2, height-2, 4);
+  //map_set(2, height-2, 5);
+
+  map_object_begin (8);
 
   // Texture pour le sol
   map_object_add ("images/ground.png", 1, MAP_OBJECT_SOLID);
@@ -31,6 +36,14 @@ void map_new (unsigned width, unsigned height)
   map_object_add ("images/grass.png", 1, MAP_OBJECT_SEMI_SOLID);
   // Marbre
   map_object_add ("images/marble.png", 1, MAP_OBJECT_SOLID | MAP_OBJECT_DESTRUCTIBLE);
+  // Marbre2
+  map_object_add ("images/marble2.png", 1, MAP_OBJECT_SOLID | MAP_OBJECT_DESTRUCTIBLE);
+  // Fleur1
+  map_object_add("images/flower.png", 1, MAP_OBJECT_AIR);
+  //Fleur2
+  map_object_add("images/flower2.png", 1, MAP_OBJECT_AIR);
+  //Piece map
+  map_object_add("images/coin.png", 20, MAP_OBJECT_AIR | MAP_OBJECT_COLLECTIBLE);
 
   map_object_end ();
 

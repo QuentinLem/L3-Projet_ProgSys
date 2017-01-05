@@ -8,3 +8,4 @@
 "images/coin.png"	20 	air 	   destructible     collectible		not-generator
 "images/question.png"	17      solid	   not-destructible not-collectible	generator
 "images/flower.png"	1	air	   not-destructible not-collectible	not-generator
+"images/flower2.png"	1	air	   not-destructible not-collectible	not-generator
