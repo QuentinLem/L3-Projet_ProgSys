@@ -11,9 +11,17 @@
 #include <pthread.h>
 
 #include "timer.h"
+#include "../include/timer.h"
 
-struct timeval TVS[100] = { 0 };
-int lastTimerIndex = -1;
+
+
+/**********************************/
+/** Entries and tools for timers **/
+/**********************************/
+
+struct timer_entry *entries;
+static struct timer_entry *zeroEntries;
+static struct timeval zeroTimeval;
 
 // Return number of elapsed µsec since..    . a long time ago
 static unsigned long get_time (void)
@@ -30,10 +38,58 @@ static unsigned long get_time (void)
 
 //#ifdef PADAWAN
 
+void removeFirstEntry(){
+    if (entries->next != NULL)
+        entries = entries->next;
+    else if(TVEQ(entries->tv, zeroTimeval))
+        entries = zeroEntries;
+}
+
 static void alrmHandler(int signum){
+    struct itimerval timer;
+    struct timeval now;
+    struct timeval then;
+    struct timer_entry *current = entries;
+
+    // Getting actual time
+    gettimeofday(&now, NULL);
+
+    // Loop on first elements
+    while(TVEQ(current->tv, current->next->tv)){
+        // Pushing event
+        sdl_push_event(current->data);
+        // Going to next element
+        current = current->next;
+        // Removing first entry, used
+        removeFirstEntry();
+    }
+
+    // New alarm
+    then.tv_sec = current->tv.tv_sec - now.tv_sec;
+    then.tv_usec = current->tv.tv_usec - now.tv_usec;
+    // If subtraction has made the
+    if(then.tv_usec < 0)
+    {
+        then.tv_sec -= 1;
+        then.tv_usec += 1000000;
+    }
+    // If then is negative
+    if((then.tv_sec <= 0) && (then.tv_usec <= 0))
+    {
+        fprintf(stderr, "ERROR : A TIMER SCHEDULE IS <=0 !");
+        fflush(stderr);
+    }
+    else {
+        timer.it_interval = zeroTimeval;
+        timer.it_value = then;
+        setitimer(ITIMER_REAL, &timer, NULL);
+    }
+
+    // OLD
     pthread_t my_id;
     my_id = pthread_self();
     printf("\nTHREAD [%u] : Handling alarm\n", (unsigned int)my_id);
+
 }
 
 void * alrmDeamon(void *param){
@@ -62,44 +118,12 @@ void * alrmDeamon(void *param){
     }
 }
 
-/********************************************************/
-/*** Function returning the double value of a timeval ***/
-/********************************************************/
-double timevalToDouble(struct timeval tv){
-    return tv.tv_sec + ( tv.tv_usec / 1000000 );
-}
-
-/*****************************************/
-/*** Function substracting two timeval ***/
-/*****************************************/
-int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y) {
-    /* Perform the carry for the later subtraction by updating y. */
-    if (x->tv_usec < y->tv_usec) {
-        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-        y->tv_usec -= 1000000 * nsec;
-        y->tv_sec += nsec;
-    }
-    if (x->tv_usec - y->tv_usec > 1000000) {
-        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-        y->tv_usec += 1000000 * nsec;
-        y->tv_sec -= nsec;
-    }
-
-    /* Compute the time remaining to wait.
-       tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
-    result->tv_usec = x->tv_usec - y->tv_usec;
-
-    /* Return 1 if result is negative. */
-    return x->tv_sec < y->tv_sec;
-}
-
-bool isEmptyTimeval(struct timeval tv){
+bool isEmptyTimeval(struct timeval* tv){
     struct timeval emptyTV;
     emptyTV.tv_sec = 0;
     emptyTV.tv_usec = 0;
     double emptyTimeval = emptyTV.tv_sec + ( emptyTV.tv_usec / 1000000 );
-    double tvDouble = tv.tv_sec + ( tv.tv_usec / 1000000 );
+    double tvDouble = tv->tv_sec + ( tv->tv_usec / 1000000 );
 
     if(tvDouble - emptyTimeval == emptyTimeval)
         return true;
@@ -110,6 +134,13 @@ bool isEmptyTimeval(struct timeval tv){
 // timer_init returns 1 if timers are fully implemented, 0 otherwise
 int timer_init (void)
 {
+    // Init some variables for timers
+    zeroTimeval.tv_sec = 0;
+    zeroTimeval.tv_usec = 0;
+    zeroEntries->tv = zeroTimeval;
+    zeroEntries->data = NULL;
+    zeroEntries->next = NULL;
+
     // Block SIGALRM reception
     sigset_t new_set;
     sigemptyset(&new_set);
@@ -124,31 +155,69 @@ int timer_init (void)
     pthread_t alrmThread;
     if(pthread_create(&alrmThread, NULL, &alrmDeamon, NULL)){
         printf("\nError creating thread\n");
-//        return 1;
     }
 
   return 0; // Implementation not ready
 }
 
-struct timeval computeTimeval(Uint32 delay){
-    // TODO: compute timeval from delay (gettime + delay converti
+struct timeval computeTimevalTimer(Uint32 delay){
+    // Getting current timeval
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    // Add vars
+    int addSec, addUSec;
+    // Computing
+    addSec = (delay - delay % 1000) / 1000 ;
+    addUSec = (delay % 1000) * 1000;
+    tv.tv_sec += addSec;
+    tv.tv_usec += addUSec;
+    return tv;
+}
+
+void swapEntries(struct timer_entry *a, struct timer_entry *b){
+    struct timer_entry *tmp = a;
+    a->tv = b->tv;
+    a->data = b->data;
+    a->next = b->next;
+    b->tv = tmp->tv;
+    b->data = tmp->data;
+    b->next = tmp->next;
 }
 
 void timer_set (Uint32 delay, void *param)
 {
-    int i = 0;
-    bool ok = true;
-    struct timeval newTimer = computeTimeval(delay);
+    // Vars
+    bool ok = false;
+    bool first = true;
+    struct timeval newTimer = computeTimevalTimer(delay);
+    struct timer_entry *currentEntry = entries;
+    struct timer_entry *newEntry;
+    newEntry->tv = newTimer;
+    newEntry->data = param;
+    newEntry->next = NULL;
     // Finding the place to insert
-    while(ok){
-        // Si la case est libre ou si on est plus petit que le timer courant
-        if(isEmptyTimeval(TVS[i]) || timeval_subtract(*(struct timeval){0}, )){
-
+    while(!ok){
+        // INSERTION : Inférieur à la case, effectuer un échange
+        if(TVLESS(newTimer, currentEntry->tv)){
+            newEntry->next = currentEntry;
+            swapEntries(currentEntry, newEntry);
+            ok = true;
         }
-
+        // INSERTION : Dernier élément de chaine atteint
+        else if(currentEntry->next == NULL){
+            currentEntry->next = newEntry;
+            ok = true;
+        }
+        // Next element
+        else {
+            first = false;
+            currentEntry = currentEntry->next;
+        }
     }
-    setitimer(ITIMER_VIRTUAL);
-  // TODO
+    if(first){
+        struct itimerval timer;
+        setitimer(ITIMER_REAL, &timer, NULL);
+    }
 }
 
 
