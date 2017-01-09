@@ -18,6 +18,7 @@ LIB	:= lib/libgame.a
 
 #CC=gcc
 CFLAGS := -O3 -g -std=c99 -Wall -Wno-unused-function
+CFLAGS += -D_XOPEN_SOURCE=600
 CFLAGS += -DPADAWAN
 CFLAGS += -I./include
 CFLAGS += $(shell pkg-config SDL2_image SDL2_mixer --cflags)
@@ -53,4 +54,4 @@ endif
 
 .PHONY: clean
 clean: 
-	rm -f game obj/*.o deps/*.d
+	rm -f game obj/*.o deps/*.d maps/saved.map
