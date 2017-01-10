@@ -107,9 +107,6 @@ static void alrmHandler(int signum){
         if (TVLESSEQ (current->tv, now))
         {
             entries = entries->next;
-            /* This needs to be executed, as it has expired.
-               It is expected that p->func will free p->data
-               if it is necessary */
             sdl_push_event(current->data);
             free (current);
         }
