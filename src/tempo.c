@@ -13,6 +13,18 @@
 #include "timer.h"
 #include "../include/timer.h"
 
+// Timer_entry struct
+struct timer_entry {
+    struct timeval tv;
+    void *data;
+    struct timer_entry *next;
+};
+
+// Compare two timeval
+// Less operator
+#define TVLESS(a,b) ((a).tv_sec == (b).tv_sec ? ((a).tv_usec < (b).tv_usec) : ((a).tv_sec < (b).tv_sec))
+// Less or equal operator
+#define TVLESSEQ(a,b) ((a).tv_sec == (b).tv_sec ? ((a).tv_usec <= (b).tv_usec) : ((a).tv_sec <= (b).tv_sec))
 
 
 /**********************************/
@@ -41,21 +53,10 @@ static unsigned long get_time (void)
   return tv.tv_sec * 1000000UL + tv.tv_usec;
 }
 
-#ifdef PADAWAN
-
-// Function used to remove first entry of timer entries
-void removeFirstEntry(){
-    if (entries->next != NULL){
-        entries = entries->next;
-    }
-    else if(TVEQ(entries->tv, zeroTimeval)) {
-        entries = zeroEntry;
-    }
-}
+//#ifdef PADAWAN
 
 // Function used to substract timevals into result arg and returning if res is negative or not
-int
-timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
+int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
 {
     /* Perform the carry for the later subtraction by updating y. */
     if (x->tv_usec < y->tv_usec) {
@@ -81,7 +82,6 @@ timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
 
 // Sigalrm handler
 static void alrmHandler(int signum){
-    fprintf(stdout, "### ALRM : ENTERING HANDLER");
     FILE *file;
     if(!logCreated){
         file = fopen("log.txt", "w");
@@ -117,7 +117,7 @@ static void alrmHandler(int signum){
     {
         // Negative next timer
         if(timeval_subtract(&then, &entries->tv, &now)){
-            fputs ("Scheduling for <=0 time??!\n", file);
+            fputs ("Scheduling for <=0 time?!\n", file);
         }
         // non negative
         else {
@@ -213,25 +213,6 @@ struct timeval computeTimevalTimer(Uint32 delay){
     return tv;
 }
 
-// Function used to swap two entries of struct timer_entry
-void swapEntries(struct timer_entry *a, struct timer_entry *b){
-    struct timer_entry *tmp = (struct timer_entry*) malloc (sizeof (struct timer_entry));
-    // Storing a for future affectation
-    tmp->tv = a->tv;
-    tmp->next = a->next;
-    tmp->data = a->data;
-    // Affecting b to a
-    a->tv = b->tv;
-    a->data = b->data;
-    a->next = b->next;
-    // Affecting tmp - a - to b
-    b->tv = tmp->tv;
-    b->data = tmp->data;
-    b->next = tmp->next;
-    // Freeing tmp
-    free(tmp);
-}
-
 // Function used to set timer
 void timer_set (Uint32 delay, void *param)
 {
@@ -287,4 +268,4 @@ void timer_set (Uint32 delay, void *param)
 }
 
 
-#endif
+//#endif
