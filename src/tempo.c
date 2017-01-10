@@ -41,7 +41,7 @@ static unsigned long get_time (void)
   return tv.tv_sec * 1000000UL + tv.tv_usec;
 }
 
-//#ifdef PADAWAN
+#ifdef PADAWAN
 
 // Function used to remove first entry of timer entries
 void removeFirstEntry(){
@@ -290,4 +290,4 @@ void timer_set (Uint32 delay, void *param)
 }
 
 
-//#endif
+#endif
