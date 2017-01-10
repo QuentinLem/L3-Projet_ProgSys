@@ -7,19 +7,19 @@
 
 #include "map.h"
 #include "error.h"
-#include "list.h"
+
 
 #ifdef PADAWAN
 
 #define BUFFER_MAX_SIZE 300
 
-void natural_write(int fd, char str[BUFFER_MAX_SIZE]){
+void natural_write(int fd, char str[BUFFER_MAX_SIZE]) {
   if(write(fd, str, sizeof(char)*strlen(str)) == -1){
       exit_with_error ("Map save failed: 'write'' function\n");
     }
 }
 
-int init_saving_file(char *filename){
+int init_saving_file(char *filename) {
   int fd = open(filename, O_WRONLY|O_CREAT, 0666);
   if(fd == -1){
     exit_with_error("Map_save failed on open save_file\n");
@@ -39,7 +39,7 @@ int isValueInArray(int val, int *array, int array_size){
   return 0;
 }
 
-int save_obj_on_map(int *array, int obj_val, int iterator){
+int save_obj_on_map(int *array, int obj_val, int iterator) {
   // si l'objet n'est as encore dans la liste
   if(!isValueInArray(obj_val, array, iterator)) {
     // stockage de l'ID du nouvel objet decouvert
@@ -49,13 +49,13 @@ int save_obj_on_map(int *array, int obj_val, int iterator){
   return 0;
 }
 
-void print_map_status(int fd, int map_width, int map_height, int map_nb_obj){
+void print_map_status(int fd, int map_width, int map_height, int map_nb_obj) {
   char buffer[BUFFER_MAX_SIZE];
   sprintf(buffer, "%d\n%d\n%d\n", map_width, map_height, map_nb_obj);
   natural_write(fd, buffer);
 }
 
-int print_map_matrix(int fd, int map_width, int map_height, int *objects_array){
+int print_map_matrix(int fd, int map_width, int map_height, int *objects_array) {
   char buffer[BUFFER_MAX_SIZE];
   int object_value_tmp;
   int iterator = 0;
@@ -78,7 +78,7 @@ int print_map_matrix(int fd, int map_width, int map_height, int *objects_array){
   return iterator;
 }
 
-void print_saved_obj(int fd, int *array, int iterator){
+void print_saved_obj(int fd, int *array, int iterator) {
   char buffer[BUFFER_MAX_SIZE];
   int curr_obj;
   char *obj_name;
@@ -140,8 +140,7 @@ void map_new (unsigned width, unsigned height) {
 
 }
 
-void map_save (char *filename)
-{
+void map_save (char *filename) {
   int width = map_width();
   int height = map_height();
   int nb_obj = map_objects();
@@ -158,8 +157,7 @@ void map_save (char *filename)
   fprintf(stderr, "Map saved on: %s\n", filename);
 }
 
-void map_load (char *filename)
-{
+void map_load (char *filename) {
   /*// TODO_begin
   char buffer;
   int fd = open(filename, O_WRONLY|O_CREAT, 0666);
