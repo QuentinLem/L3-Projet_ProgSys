@@ -31,3 +31,13 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Dependencies and executable
+game
+deps/*
+
+# JetBrains & Others
+.idea
+.DS_Store
+CMakeLists.txt
+cmake-build-debug
