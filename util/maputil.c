@@ -84,8 +84,6 @@ int main(int argc, char **argv){
     char *option = argv[2];
     char *option2 = argv[3];
 
-    printf("%s, %s, %s\n", file, option, option2);
-
     if(argc == 2 && !strcmp(argv[1], "--help")) {
         print_maputil_help();
 

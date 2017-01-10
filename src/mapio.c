@@ -8,7 +8,6 @@
 #include "map.h"
 #include "error.h"
 
-
 #ifdef PADAWAN
 
 #define BUFFER_MAX_SIZE 300
@@ -55,48 +54,26 @@ void print_map_status(int fd, int map_width, int map_height, int map_nb_obj) {
   natural_write(fd, buffer);
 }
 
-int print_map_matrix(int fd, int map_width, int map_height, int *objects_array) {
+void print_map_matrix(int fd, int map_width, int map_height) {
   char buffer[BUFFER_MAX_SIZE];
-  int object_value_tmp;
-  int iterator = 0;
   // write de la matrice de la map (bas->haut, gauche->droite)
-  natural_write(fd, "**\n");
   for(int i = map_height-1; i >= 0; i--){
     for(int j = 0; j < map_width; j++){
-      object_value_tmp = map_get(j,i);
-      sprintf(buffer, "%d ", object_value_tmp);
+      sprintf(buffer, "%d ", map_get(j,i));
       natural_write(fd, buffer);
-      
-      // récupération à la volee des différents objets présents sur la map
-      if(save_obj_on_map(objects_array, object_value_tmp, iterator)){
-        iterator++;
-      }
     }
     natural_write(fd, "\n");
   }
-  natural_write(fd, "**\n");
-  return iterator;
 }
 
-void print_saved_obj(int fd, int *array, int iterator) {
+void print_map_objects(int fd, int nb_obj){
+  
   char buffer[BUFFER_MAX_SIZE];
   int curr_obj;
-  char *obj_name;
-  int obj_frames;
-  int obj_solid;
-  int obj_destruct;
-  int obj_collect;
-  int obj_gener;
-  for(int i = 0; i < iterator; i++){
-    curr_obj = array[i];
-    obj_name = map_get_name(curr_obj);
-    obj_frames = map_get_frames(curr_obj);
-    obj_solid = map_get_solidity(curr_obj);
-    obj_destruct = map_is_destructible(curr_obj);
-    obj_collect = map_is_collectible(curr_obj);
-    obj_gener = map_is_generator(curr_obj);
-    sprintf(buffer, "%d %d %d %d %d %d\n", curr_obj, obj_frames, obj_solid, obj_destruct, obj_collect, obj_gener);
-    //natural_write(fd, obj_name);
+  
+  for(int i = 0; i < nb_obj; i++){
+    curr_obj = i;
+    sprintf(buffer, "%d %d %d %d %d %d %s\n", curr_obj, map_get_frames(curr_obj), map_get_solidity(curr_obj), map_is_destructible(curr_obj), map_is_collectible(curr_obj), map_is_generator(curr_obj), map_get_name(curr_obj));
     natural_write(fd, buffer);
   }
 }
@@ -145,13 +122,10 @@ void map_save (char *filename) {
   int height = map_height();
   int nb_obj = map_objects();
 
-  int objects_array[nb_obj];
-  int nb_objects_saved;
-
   int fd = init_saving_file(filename);
   print_map_status(fd, width, height, nb_obj);
-  nb_objects_saved = print_map_matrix(fd, width, height, objects_array);
-  print_saved_obj(fd, objects_array, nb_objects_saved);
+  print_map_objects(fd, nb_obj);
+  print_map_matrix(fd, width, height);
   
   close(fd);
   fprintf(stderr, "Map saved on: %s\n", filename);
