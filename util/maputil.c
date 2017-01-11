@@ -26,7 +26,7 @@ FILE *open_file_RD(char *filename){
     }
 }
 
-void read_line_n(FILE *fp, char *buffer, int line){
+void maputil_read_line_n(FILE *fp, char *buffer, int line){
     for(int i = 0; i < line; i++) {
         fgets(buffer, BUFFER_MAX_SIZE, fp);
     }
@@ -44,21 +44,21 @@ void print_maputil_help(){
 void print_maputil_getwidth(FILE *fp){
     int line_in_file = LINE_WIDTH;
     char buffer[BUFFER_MAX_SIZE];
-    read_line_n(fp, buffer, line_in_file);
+    maputil_read_line_n(fp, buffer, line_in_file);
     printf("MAP WIDTH: %s", buffer);
 }
 
 void print_maputil_getheight(FILE *fp){
     int line_in_file = LINE_HEIGHT;
     char buffer[BUFFER_MAX_SIZE];
-    read_line_n(fp, buffer, line_in_file);
+    maputil_read_line_n(fp, buffer, line_in_file);
     printf("MAP HEIGHT: %s", buffer);
 }
 
 void print_maputil_getobjects(FILE *fp){
     int line_in_file = LINE_OBJECTS;
     char buffer[BUFFER_MAX_SIZE];
-    read_line_n(fp, buffer, line_in_file);
+    maputil_read_line_n(fp, buffer, line_in_file);
     printf("MAP OBJECTS: %s", buffer);
 }
 

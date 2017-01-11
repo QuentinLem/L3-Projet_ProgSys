@@ -10,7 +10,30 @@
 
 #ifdef PADAWAN
 
-#define BUFFER_MAX_SIZE 300
+#define BUFFER_MAX_SIZE 3096
+
+FILE *load_open_file(char *filename, char *mode){
+    FILE *fp = fopen(filename, mode);
+    if(fp == NULL){
+        exit_with_error("'maputil' failed on open file '%s' (%s mode)\n", filename, mode);
+    }
+    return fp;
+}
+
+void read_line_n(FILE *fp, char *buffer, int line){
+    rewind(fp);
+    for(int i = 0; i < line; i++) {
+        if(!fgets(buffer, BUFFER_MAX_SIZE, fp)){
+          exit_with_error("Error on load: 'read_line_n'\n");
+        }
+    }
+}
+
+void read_next_line(FILE *fp, char *buffer){
+  if(!fgets(buffer, BUFFER_MAX_SIZE, fp)){
+    exit_with_error("Error on load: 'read_next_line'\n");
+  }
+}
 
 void natural_write(int fd, char str[BUFFER_MAX_SIZE]) {
   if(write(fd, str, sizeof(char)*strlen(str)) == -1){
@@ -66,15 +89,31 @@ void print_map_matrix(int fd, int map_width, int map_height) {
   }
 }
 
+void get_obj_properties(int id_obj, char* buffer){
+
+  sprintf(buffer, "%s %d %d", map_get_name(id_obj), map_get_frames(id_obj), map_get_solidity(id_obj));
+
+  if(map_is_destructible(id_obj)){
+    strcat(buffer, " 4");
+  }
+  if(map_is_collectible(id_obj)){
+    strcat(buffer, " 8");
+  }
+  if(map_is_generator(id_obj)){
+    strcat(buffer, " 16");
+  }
+
+  strcat(buffer, "\n");
+}
+
 void print_map_objects(int fd, int nb_obj){
-  
-  char buffer[BUFFER_MAX_SIZE];
+  char obj_properties[BUFFER_MAX_SIZE];
   int curr_obj;
   
   for(int i = 0; i < nb_obj; i++){
     curr_obj = i;
-    sprintf(buffer, "%d %d %d %d %d %d %s\n", curr_obj, map_get_frames(curr_obj), map_get_solidity(curr_obj), map_is_destructible(curr_obj), map_is_collectible(curr_obj), map_is_generator(curr_obj), map_get_name(curr_obj));
-    natural_write(fd, buffer);
+    get_obj_properties(curr_obj, obj_properties);
+    natural_write(fd, obj_properties);
   }
 }
 
@@ -88,11 +127,6 @@ void map_new (unsigned width, unsigned height) {
     map_set (0, y, 1); // Wall
     map_set (width - 1, y, 1); // Wall
   }
-
-  map_set(2, height-2, 2);
-  //map_set(2, height-2, 3);
-  //map_set(2, height-2, 4);
-  //map_set(2, height-2, 5);
 
   map_object_begin (8);
 
@@ -128,29 +162,73 @@ void map_save (char *filename) {
   print_map_matrix(fd, width, height);
   
   close(fd);
-  fprintf(stderr, "Map saved on: %s\n", filename);
+  fprintf(stdout, "Map saved on: %s\n", filename);
+}
+
+void load_map_matrix(FILE *fp, char *buffer, char *separator,int height, int width, int line_end_list_obj){
+  char *token;
+  read_line_n(fp, buffer, line_end_list_obj);
+  for(int i = height-1; i >= 0; i--){
+    read_next_line(fp, buffer);
+    token = strtok(buffer, separator);
+    for(int j = 0; j < width; j++){
+      map_set(j, i, atoi(token));
+      token = strtok(NULL, separator);
+    }
+  }
+}
+
+void load_map_object(FILE *fp, char *buffer, char *separator, int line){
+  char *token;
+  char *obj_name;
+  unsigned int obj_frames;
+  unsigned int obj_type;
+  read_line_n(fp, buffer, line);
+  
+  token = strtok(buffer, separator);
+  obj_name = token;
+
+  token = strtok(NULL, separator);
+  obj_frames = atoi(token);
+  
+  token = strtok(NULL, separator);
+  obj_type = atoi(token);
+
+  while(token != NULL) {
+    token = strtok(NULL, separator);
+    if(token != NULL) {
+      obj_type = obj_type | atoi(token);
+    }
+  }
+  map_object_add(obj_name, obj_frames, obj_type);
+}
+
+void load_map_objects(FILE *fp, char *buffer, char *separator, int nb_obj){
+  map_object_begin(nb_obj);
+  for(int i = 0; i < nb_obj; i++){
+    load_map_object(fp, buffer, separator, 4+i);
+  }
+  map_object_end();
 }
 
 void map_load (char *filename) {
-  /*// TODO_begin
-  char buffer;
-  int fd = open(filename, O_WRONLY|O_CREAT, 0666);
-  if(fd == -1){
-    exit_with_error("Map_load failed when opening file\n");
-  }
+  
+  FILE *fp = load_open_file(filename, "r");
+  char buffer[BUFFER_MAX_SIZE];
+  char *separator = " ";
 
-  printf("")
+  int width = atoi(fgets(buffer, BUFFER_MAX_SIZE, fp));
+  int height = atoi(fgets(buffer, BUFFER_MAX_SIZE, fp));
+  int nb_obj = atoi(fgets(buffer, BUFFER_MAX_SIZE, fp));
 
-  for(i = input_length; i >=0 ; i--){
-    lseek(fd1,i,SEEK_SET);
-    read(fd1, &buffer, sizeof(char));
-    write(fd2, &buffer, sizeof(char));
-  }
+  int line_end_list_obj = 3+nb_obj;  
+  
+  map_allocate(width, height);
+  load_map_matrix(fp, buffer, separator, height, width, line_end_list_obj);
+  load_map_objects(fp, buffer, separator, nb_obj);
 
-
-  close(fd);*/
-  // TODO_end
-  exit_with_error ("Map load is not yet implemented\n");
+  fclose(fp);
+  fprintf(stdout, "Map load with success\n");
 }
 
 #endif
