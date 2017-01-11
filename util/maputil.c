@@ -15,8 +15,12 @@
 #define LINE_OBJECTS 3
 
 int is_map_file(char *filename){
-    //not implemented
-    return 1;
+    char *dot_map;
+    dot_map = strstr(filename, ".map\0");
+    if(dot_map != NULL){
+        return 1;
+    }
+    return 0;
 }
 
 FILE *open_file_RD(char *filename){
@@ -38,7 +42,7 @@ void print_maputil_error(){
 }
 
 void print_maputil_help(){
-    printf("\nmaputil HELP\nUsage: maputil <filename> --[OPTIONS]\n<filename> must be a .map file\n\nOPTIONS:\n--help\n<filename> --getwidth\n<filename> --getheight\n<filename> --getobjects\n<filename> --getinfo\n\n<filename> --setwidth\n<filename> --setheight (not implemented)\n\n");
+    printf("\nmaputil HELP\nUsage: maputil <filename> --[OPTIONS]\n<filename> must be a .map file\n\nOPTIONS:\n--help\n<filename> --getwidth\n<filename> --getheight\n<filename> --getobjects\n<filename> --getinfo\n\n<filename> --setwidth <width> (%d <= <width> <= %d)\n<filename> --setheight <height> (%d <= <height> <= %d)\n\n", MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT);
 }
 
 void print_maputil_getwidth(FILE *fp){
@@ -69,12 +73,20 @@ void print_maputil_getinfo(FILE *fp){
     print_maputil_getobjects(fp);
 }
 
-void print_maputil_setwidth(){
-    exit_with_error ("maputil --setheight option is not yet implemented\n");
+void print_maputil_setwidth(int new_width){
+    if(new_width < MIN_WIDTH || new_width > MAX_WIDTH){
+        exit_with_error("Error: maputil_setwidth, try maputil --help for more information\n");
+    } else {
+        exit_with_error ("maputil --setheight option is not yet implemented\n");
+    }
 }
 
-void print_maputil_setheight(){
-    exit_with_error ("maputil --setheight option is not yet implemented\n");
+void print_maputil_setheight(int new_height){
+    if(new_height < MIN_HEIGHT || new_height > MAX_HEIGHT){
+        exit_with_error("Error: maputil_setheight, try maputil --help for more information\n");
+    } else {
+        exit_with_error ("maputil --setheight option is not yet implemented\n");
+    }
 }
 
 int main(int argc, char **argv){
@@ -110,9 +122,9 @@ int main(int argc, char **argv){
         fp = open_file_RD(file);
 
         if(!strcmp(option, "--setwidth")){
-            print_maputil_setwidth();
+            print_maputil_setwidth(atoi(argv[3]));
         } else if(!strcmp(option, "--setheight")){
-            print_maputil_setheight();
+            print_maputil_setheight(atoi(argv[3]));
         } else {
             print_maputil_error();    
         }
