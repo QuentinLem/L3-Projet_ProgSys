@@ -7,4 +7,8 @@ void timer_set (Uint32 delay, void *param);
 
 void sdl_push_event (void *param);
 
+
+// Equal operator
+#define TVEQ(a,b) ((a).tv_sec == (b).tv_sec ? ((a).tv_usec == (b).tv_usec) : (0))
+
 #endif

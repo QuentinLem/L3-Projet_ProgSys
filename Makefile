@@ -19,12 +19,14 @@ LIB	:= lib/libgame.a
 #CC=gcc
 CFLAGS := -O3 -g -std=c99 -Wall -Wno-unused-function
 CFLAGS += -D_XOPEN_SOURCE=600
+CFLAGS += -lpthread -D_REENTRANT
 CFLAGS += -DPADAWAN
 CFLAGS += -I./include
 CFLAGS += $(shell pkg-config SDL2_image SDL2_mixer --cflags)
 LDLIBS := $(shell pkg-config SDL2_image SDL2_mixer --libs)
 
 LDLIBS += -lpthread
+LDFLAGS += -lpthread
 
 $(OBJECTS): $(MAKEFILES)
 
